@@ -6,17 +6,18 @@ import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SeekBar;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.video.BackgroundSubtractorMOG;
 
 public class MainActivity extends ActionBarActivity {
+    private SeekBar seekBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +29,11 @@ public class MainActivity extends ActionBarActivity {
                     .add(R.id.container, new PlaceholderFragment())
                     .commit();
         }
+        seekBar = (SeekBar) findViewById(R.id.seekBar);
+    }
+
+    public SeekBar getSeekBar() {
+        return seekBar;
     }
 
     public static class PlaceholderFragment extends Fragment {
@@ -35,7 +41,9 @@ public class MainActivity extends ActionBarActivity {
         private CameraBridgeViewBase openCvCameraView;
         private Mat intermediateMat;
         private BaseLoaderCallback loaderCallback;
-        private BackgroundSubtractorMOG backgroundSubtractor;
+
+        private final int ratio = 3;
+        private final int kernelSize = 3;
 
         public PlaceholderFragment() {}
 
@@ -49,7 +57,6 @@ public class MainActivity extends ActionBarActivity {
                 @Override
                 public void onCameraViewStarted(int width, int height) {
                     intermediateMat = new Mat();
-                    backgroundSubtractor = new BackgroundSubtractorMOG();
                 }
 
                 @Override
@@ -63,18 +70,14 @@ public class MainActivity extends ActionBarActivity {
 
                 @Override
                 public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+                    int lowThreshold = ((MainActivity) getActivity()).getSeekBar().getProgress();
                     Mat rgba = inputFrame.rgba();
                     Imgproc.cvtColor(rgba, rgba, Imgproc.COLOR_RGBA2GRAY);
-                    backgroundSubtractor.apply(rgba, rgba);
+                    Imgproc.blur(rgba, rgba, new Size(3, 3));
+                    Imgproc.Canny(rgba, rgba, lowThreshold, lowThreshold * ratio, kernelSize, false);
                     return rgba;
                 }
 
-                private Mat rotate(Mat mat) {
-                    Mat mRgbaT = mat.t();
-                    Core.flip(mat.t(), mRgbaT, 1);
-                    Imgproc.resize(mRgbaT, mRgbaT, mat.size());
-                    return mRgbaT;
-                }
             });
             loaderCallback = new BaseLoaderCallback(getActivity().getApplicationContext()) {
                 @Override
