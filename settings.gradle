@@ -1,1 +1,1 @@
-include ':test', ':opencv-android'
+include ':test', ':hand-pose-estimation', ':opencv-android', ':skin_detection'
